@@ -1,4 +1,5 @@
-//+build tools
+//go:build tools
+// +build tools
 
 // Run this script like so:
 //
@@ -41,7 +42,7 @@ func run() error {
 	case "cover":
 		return runCover(args)
 	case "builddocker":
-		return runBuildDocker()
+		return runBuildDocker(args)
 	case "buildrelease":
 		return runBuildRelease()
 	case "release":
@@ -53,7 +54,10 @@ func run() error {
 	return nil
 }
 
-func runBuildDocker() error {
+func runBuildDocker(args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("missing <tag> argument")
+	}
 	cmd := command(
 		"go", "build", "-a",
 		"-installsuffix", "cgo",
@@ -65,7 +69,12 @@ func runBuildDocker() error {
 		return err
 	}
 
-	cmd = command("docker", "build", "-t", "johannesboyne/gofakes3", ".")
+	cmd = command("docker", "build", "-t", "logiqai/gofakes3", ".")
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	cmd = command("docker", "build", "-t", fmt.Sprintf("logiqai/gofakes3:%s", args[0]), ".")
 	if err := cmd.Run(); err != nil {
 		return err
 	}

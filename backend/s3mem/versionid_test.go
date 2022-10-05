@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/johannesboyne/gofakes3"
+	gofakes3 "github.com/logiqai/s32http"
 )
 
 func TestVersionID(t *testing.T) {

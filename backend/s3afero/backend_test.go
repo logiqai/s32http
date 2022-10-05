@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/johannesboyne/gofakes3"
+	gofakes3 "github.com/logiqai/s32http"
 	"github.com/spf13/afero"
 )
 

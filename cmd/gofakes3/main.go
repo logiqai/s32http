@@ -12,10 +12,11 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3afero"
 	"github.com/johannesboyne/gofakes3/backend/s3bolt"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
+	gofakes3 "github.com/logiqai/s32http"
+	"github.com/logiqai/s32http/backend/logiq"
 	"github.com/spf13/afero"
 )
 
@@ -47,6 +48,12 @@ type fakeS3Flags struct {
 
 	debugCPU  string
 	debugHost string
+
+	logiqHost     string
+	logiqPort     string
+	maxBatch      int
+	maxWorkers    int
+	logiqLogLevel string
 }
 
 func (f *fakeS3Flags) attach(flagSet *flag.FlagSet) {
@@ -61,13 +68,18 @@ func (f *fakeS3Flags) attach(flagSet *flag.FlagSet) {
 	flagSet.BoolVar(&f.quiet, "quiet", false, "If passed, log messages are not printed to stderr")
 
 	// Backend specific:
-	flagSet.StringVar(&f.backendKind, "backend", "", "Backend to use to store data (memory, bolt, directfs, fs)")
+	flagSet.StringVar(&f.backendKind, "backend", "", "Backend to use to store data (memory, bolt, directfs, fs, logiq)")
 	flagSet.StringVar(&f.boltDb, "bolt.db", "locals3.db", "Database path / name when using bolt backend")
 	flagSet.StringVar(&f.directFsPath, "directfs.path", "", "File path to serve using S3. You should not modify the contents of this path outside gofakes3 while it is running as it can cause inconsistencies.")
 	flagSet.StringVar(&f.directFsMeta, "directfs.meta", "", "Optional path for storing S3 metadata for your bucket. If not passed, metadata will not persist between restarts of gofakes3.")
 	flagSet.StringVar(&f.directFsBucket, "directfs.bucket", "mybucket", "Name of the bucket for your file path; this will be the only supported bucket by the 'directfs' backend for the duration of your run.")
 	flagSet.StringVar(&f.fsPath, "fs.path", "", "Path to your S3 buckets. Buckets are stored under the '/buckets' subpath.")
 	flagSet.StringVar(&f.fsMeta, "fs.meta", "", "Optional path for storing S3 metadata for your buckets. Defaults to the '/metadata' subfolder of -fs.path if not passed.")
+	flagSet.IntVar(&f.maxBatch, "logiq.maxbatch", 25, "Maximum number of messages to batch before sending to Logiq")
+	flagSet.IntVar(&f.maxWorkers, "logiq.maxworkers", 100, "Maximum number of workers to use to send messages to Logiq")
+	flagSet.StringVar(&f.logiqHost, "logiq.host", "logiq-flash", "Logiq host to send messages to")
+	flagSet.StringVar(&f.logiqPort, "logiq.port", "9999", "Logiq port to send messages to")
+	flagSet.StringVar(&f.logiqLogLevel, "logiq.loglevel", "info", "Log level to use for Logiq messages")
 
 	// Debugging:
 	flagSet.StringVar(&f.debugHost, "debug.host", "", "Run the debug server on this host")
@@ -157,6 +169,19 @@ func run() error {
 		}
 		backend = s3mem.New(s3mem.WithTimeSource(timeSource))
 		log.Println("using memory backend")
+
+	case "logiq", "lq":
+		if values.initialBucket == "" {
+			log.Println("no buckets available; consider passing -initialbucket")
+		}
+		backend = logiq.New(
+			logiq.WithLogLevel(values.logiqLogLevel),
+			logiq.WithLogiqHost(values.logiqHost),
+			logiq.WithLogiqPort(values.logiqPort),
+			logiq.WithMaxBatch(values.maxBatch),
+			logiq.WithMaxWorkers(values.maxWorkers),
+			logiq.WithTimeSource(timeSource))
+		log.Println("using logiq backend")
 
 	case "fs":
 		if timeSource != nil {

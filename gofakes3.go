@@ -58,9 +58,9 @@ func New(backend Backend, options ...Option) *GoFakeS3 {
 	for _, opt := range options {
 		opt(s3)
 	}
-	if s3.log == nil {
-		s3.log = DiscardLog()
-	}
+	//if s3.log == nil {
+	s3.log = DiscardLog()
+	//}
 	if s3.timeSource == nil {
 		s3.timeSource = DefaultTimeSource()
 	}

@@ -36,7 +36,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/johannesboyne/gofakes3"
+	gofakes3 "github.com/logiqai/s32http"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
 )
 
